@@ -1,9 +1,12 @@
-package org.example;
+package org.example.searchAlgorithms.aStar;
+
+import org.example.graph.Airport;
+import org.example.graph.Connection;
 
 import java.util.*;
 
 public class AStar {
-    public static List<String> findShortestPath(String start, String end, List<Airport> airports, double heuristicDistance) {
+    public static String findShortestPath(String start, String end, List<Airport> airports, double heuristicDistance) {
         // Map of airport codes to Airport objects
         Map<String, Airport> airportMap = new HashMap<>();
         for (Airport airport : airports) {
@@ -12,14 +15,15 @@ public class AStar {
 
         // Priority queue for A* (sorted by fScore)
         PriorityQueue<AStarNode> openSet = new PriorityQueue<>(Comparator.comparingDouble(AStarNode::getFScore));
-        openSet.add(new AStarNode(start, 0, heuristicDistance));
+        openSet.add(new AStarNode(start, 0, heuristicDistance, 0));
 
         // Map to store gScores (cost from start to each node)
         Map<String, Double> gScores = new HashMap<>();
         gScores.put(start, 0.0);
 
-        // Map to store shortest path tree
+        // Map to store shortest path tree with relative distances
         Map<String, String> cameFrom = new HashMap<>();
+        Map<String, Double> relativeDistances = new HashMap<>();
 
         // Set to track visited nodes
         Set<String> closedSet = new HashSet<>();
@@ -58,33 +62,40 @@ public class AStar {
                 if (tentativeGScore < gScores.getOrDefault(neighbor, Double.MAX_VALUE)) {
                     gScores.put(neighbor, tentativeGScore);
                     cameFrom.put(neighbor, currentAirport);
+                    relativeDistances.put(neighbor, distanceInKm);
 
                     double heuristic = neighbor.equals(end) ? 0 : heuristicDistance;
                     double fScore = tentativeGScore + heuristic;
 
-                    openSet.add(new AStarNode(neighbor, tentativeGScore, fScore));
+                    openSet.add(new AStarNode(neighbor, tentativeGScore, fScore, distanceInKm));
                 }
             }
         }
 
-        // Reconstruct path
-        List<String> path = new ArrayList<>();
+        // Reconstruct path and output
+        StringBuilder pathBuilder = new StringBuilder();
         String step = end;
-        while (step != null) {
-            path.add(step);
-            step = cameFrom.get(step);
-        }
-        Collections.reverse(path);
+        double cumulativeDistance = gScores.getOrDefault(end, Double.MAX_VALUE);
 
-        // Return path if it leads to the start, otherwise return empty
-        return path.get(0).equals(start) ? path : Collections.emptyList();
+        while (step != null) {
+            double relativeDistance = relativeDistances.getOrDefault(step, 0.0);
+            if (pathBuilder.length() > 0) {
+                pathBuilder.insert(0, " -> ");
+            }
+            pathBuilder.insert(0, step + "(" + String.format("%.2f", cumulativeDistance) + "," + String.format("%.2f", relativeDistance) + ")");
+            step = cameFrom.get(step);
+            cumulativeDistance -= relativeDistance;
+        }
+
+        return pathBuilder.toString();
     }
+
 
     public static double toKilometers(double value, String unit) {
         if ("miles".equalsIgnoreCase(unit)) {
-            return value * 1.60934; // Convert miles to kilometers
+            return value * 1.60934;
         }
-        return value; // Already in kilometers
+        return value;
     }
 }
 

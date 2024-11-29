@@ -1,45 +1,40 @@
-package org.example;
+package org.example.searchAlgorithms.dijkstra;
+
+import org.example.graph.Airport;
+import org.example.graph.Connection;
 
 import java.util.*;
 
 public class Dijkstra {
-    public static List<String> findShortestPath(String start, String end, List<Airport> airports) {
-        // Map of airport codes to Airport objects
+    public static String findShortestPath(String start, String end, List<Airport> airports) {
         Map<String, Airport> airportMap = new HashMap<>();
         for (Airport airport : airports) {
             airportMap.put(airport.getName(), airport);
         }
 
-        // Priority queue for Dijkstra's algorithm
         PriorityQueue<Node> queue = new PriorityQueue<>(Comparator.comparingDouble(Node::getDistance));
-        queue.add(new Node(start, 0));
+        queue.add(new Node(start, 0, 0));
 
-        // Map to store the shortest distances from the start node
         Map<String, Double> distances = new HashMap<>();
         distances.put(start, 0.0);
 
-        // Map to store the shortest path tree
         Map<String, String> previous = new HashMap<>();
+        Map<String, Double> relativeDistances = new HashMap<>();
 
-        // Set to track visited nodes
         Set<String> visited = new HashSet<>();
 
         while (!queue.isEmpty()) {
             Node currentNode = queue.poll();
             String currentAirport = currentNode.getCode();
 
-            // Skip if already visited
             if (visited.contains(currentAirport)) continue;
             visited.add(currentAirport);
 
-            // Stop if we reach the destination
             if (currentAirport.equals(end)) break;
 
-            // Get current airport
             Airport airport = airportMap.get(currentAirport);
             if (airport == null) continue;
 
-            // Process all connections
             for (Connection connection : airport.getConnections()) {
                 String neighbor = connection.getCode();
                 if (visited.contains(neighbor)) continue;
@@ -51,16 +46,16 @@ public class Dijkstra {
 
                 double newDistance = distances.getOrDefault(currentAirport, Double.MAX_VALUE) + distanceInKm;
 
-                // If a shorter path is found
                 if (newDistance < distances.getOrDefault(neighbor, Double.MAX_VALUE)) {
                     distances.put(neighbor, newDistance);
+                    relativeDistances.put(neighbor, distanceInKm);
                     previous.put(neighbor, currentAirport);
-                    queue.add(new Node(neighbor, newDistance));
+                    queue.add(new Node(neighbor, newDistance, distanceInKm));
                 }
             }
         }
 
-        // Reconstruct the path
+        // Build the path
         List<String> path = new ArrayList<>();
         String step = end;
         while (step != null) {
@@ -69,14 +64,31 @@ public class Dijkstra {
         }
         Collections.reverse(path);
 
-        // Return path if it leads to the start, otherwise return empty
-        return path.get(0).equals(start) ? path : Collections.emptyList();
+        if (!path.get(0).equals(start)) return "No path found";
+
+        // Format output
+        StringBuilder result = new StringBuilder();
+        double cumulativeDistance = 0;
+        for (int i = 0; i < path.size(); i++) {
+            String current = path.get(i);
+            double relativeDistance = i == 0 ? 0 : relativeDistances.getOrDefault(current, 0.0);
+            cumulativeDistance += relativeDistance;
+
+            if (i > 0) {
+                result.append(" -> ");
+            }
+            result.append(current).append("(")
+                    .append(String.format("%.2f", cumulativeDistance)).append(",")
+                    .append(String.format("%.2f", relativeDistance)).append(")");
+        }
+
+        return result.toString();
     }
 
     public static double toKilometers(double value, String unit) {
         if ("miles".equalsIgnoreCase(unit)) {
-            return value * 1.60934; // Convert miles to kilometers
+            return value * 1.60934;
         }
-        return value; // Already in kilometers
+        return value;
     }
 }

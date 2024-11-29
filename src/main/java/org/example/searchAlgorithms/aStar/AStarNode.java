@@ -1,14 +1,16 @@
-package org.example;
+package org.example.searchAlgorithms.aStar;
 
-public class AStarNode {
+class AStarNode {
     private final String code;
-    private final double gScore; // Cost from start to current node
+    private final double gScore; // Cumulative distance from start
     private final double fScore; // Estimated total cost (gScore + heuristic)
+    private final double relativeDistance; // Distance from the previous node
 
-    public AStarNode(String code, double gScore, double fScore) {
+    public AStarNode(String code, double gScore, double fScore, double relativeDistance) {
         this.code = code;
         this.gScore = gScore;
         this.fScore = fScore;
+        this.relativeDistance = relativeDistance;
     }
 
     public String getCode() {
@@ -22,5 +24,10 @@ public class AStarNode {
     public double getFScore() {
         return fScore;
     }
+
+    public double getRelativeDistance() {
+        return relativeDistance;
+    }
 }
+
 

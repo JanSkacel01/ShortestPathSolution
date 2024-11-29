@@ -1,4 +1,4 @@
-package org.example;
+package org.example.graph;
 
 public class Distance {
     private double value;
